@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_account_move_form_inherit_global_line" model="ir.ui.view">
+            <field name="name">view.account.move.form.inherit.global.line</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="account.view_move_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//page[@id='invoice_tab']" position="after">
+                    <page id="global_line" string="Conceptos Globales" >
+                        <field name="is_global_concept"/>
+                        <field name="global_lines" options="{'no_open': '1'}" attrs="{'invisible': [('is_global_concept', '=', False)]}">
+                            <tree create="true" delete="true" edit="true" editable="bottom">
+                                <field name="product_id"/>
+                                <field name="name"/>
+                                <field name="quantity"/>
+                                <field name="product_uom_id"/>
+                                <field name="product_uom_category_id" invisible="1"/>
+                                <field name="price_unit"/>
+                                <field name="tax_ids" widget="many2many_tags"/>
+                                <field name="price_subtotal" force_save="1"/>
+                                <field name="price_total" force_save="1"/>
+                                <field name="move_id" invisible="1"/>
+                                <field name="company_id" invisible="1"/>
+                                <field name="currency_id" invisible="1"/>
+                            </tree>
+                        </field>
+                        <group>
+                            <group>
+                                <field name="amount_total_concept" readonly="1" force_save="1"/>
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

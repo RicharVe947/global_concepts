@@ -1,0 +1,6 @@
+.DS_Store
+/o_etc/odoo-server.log
+*.pyc
+venv/
+__pycache__
+.idea
