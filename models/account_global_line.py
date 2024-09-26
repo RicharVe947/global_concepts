@@ -35,6 +35,59 @@ class AccountGlobaLine(models.Model):
     currency_id = fields.Many2one('res.currency', string='Currency', related="move_id.currency_id")
     discount = fields.Float(string='Discount (%)', digits='Discount', default=0.0)
     name = fields.Char(string='Label', related="product_id.display_name", store=True, readonly=False)
+    l10n_mx_edi_customs_number = fields.Char(
+        help='Optional field for entering the customs information in the case '
+        'of first-hand sales of imported goods or in the case of foreign trade'
+        ' operations with goods or services.\n'
+        'The format must be:\n'
+        ' - 2 digits of the year of validation followed by two spaces.\n'
+        ' - 2 digits of customs clearance followed by two spaces.\n'
+        ' - 4 digits of the serial number followed by two spaces.\n'
+        ' - 1 digit corresponding to the last digit of the current year, '
+        'except in case of a consolidated customs initiated in the previous '
+        'year of the original request for a rectification.\n'
+        ' - 6 digits of the progressive numbering of the custom.',
+        string='Customs number',
+        copy=False)
+    l10n_mx_edi_umt_aduana_id = fields.Many2one(
+        comodel_name='uom.uom',
+        string="UMT Aduana",
+        readonly=True, store=True, compute_sudo=True,
+        related='product_id.l10n_mx_edi_umt_aduana_id',
+        help="Used in complement 'Comercio Exterior' to indicate in the products the TIGIE Units of Measurement. "
+             "It is based in the SAT catalog.")
+    l10n_mx_edi_qty_umt = fields.Float(
+        string="Qty UMT",
+        digits=(16, 3),
+        readonly=False, store=True,
+        compute='_compute_l10n_mx_edi_qty_umt',
+        help="Quantity expressed in the UMT from product. It is used in the attribute 'CantidadAduana' in the CFDI")
+    l10n_mx_edi_price_unit_umt = fields.Float(
+        string="Unit Value UMT",
+        readonly=True, store=True,
+        compute='_compute_l10n_mx_edi_price_unit_umt',
+        help="Unit value expressed in the UMT from product. It is used in the attribute 'ValorUnitarioAduana' in the "
+             "CFDI")
+
+    @api.depends('l10n_mx_edi_umt_aduana_id', 'product_uom_id', 'quantity')
+    def _compute_l10n_mx_edi_qty_umt(self):
+        for line in self:
+            product_aduana_code = line.l10n_mx_edi_umt_aduana_id.l10n_mx_edi_code_aduana
+            uom_aduana_code = line.product_uom_id.l10n_mx_edi_code_aduana
+            if product_aduana_code == uom_aduana_code:
+                line.l10n_mx_edi_qty_umt = line.quantity
+            elif '01' in (product_aduana_code or ''):
+                line.l10n_mx_edi_qty_umt = line.product_id.weight * line.quantity
+            else:
+                line.l10n_mx_edi_qty_umt = None
+
+    @api.depends('quantity', 'price_unit', 'l10n_mx_edi_qty_umt')
+    def _compute_l10n_mx_edi_price_unit_umt(self):
+        for line in self:
+            if line.l10n_mx_edi_qty_umt:
+                line.l10n_mx_edi_price_unit_umt = line.quantity * line.price_unit / line.l10n_mx_edi_qty_umt
+            else:
+                line.l10n_mx_edi_price_unit_umt = line.l10n_mx_edi_price_unit_umt
 
     @api.onchange('product_id')
     def _onchange_product_id(self):
